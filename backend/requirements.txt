@@ -6,3 +6,4 @@ PyJWT==2.7.0
 cryptography==46.0.6
 requests==2.33.1
 joblib
+gunicorn==23.0.0

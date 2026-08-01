@@ -2,6 +2,7 @@ services:
   - type: web
     name: sentry-ids
     env: python
+    plan: free
     buildCommand: >
       pip install -r backend/requirements.txt &&
       python -m backend.ml.generate_data &&

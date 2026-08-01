@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: sentry-ids
+    env: python
+    buildCommand: >
+      pip install -r backend/requirements.txt &&
+      python -m backend.ml.generate_data &&
+      python -m backend.ml.train_model
+    startCommand: gunicorn backend.app:app
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "false"
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: ALICE_PASSWORD
+        generateValue: true
+      - key: BOB_PASSWORD
+        generateValue: true

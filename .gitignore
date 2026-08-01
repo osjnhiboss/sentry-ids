@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+backend/data/access_logs.csv
+backend/data/audit_chain.jsonl
+backend/data/encryption.key
+backend/ml/model.joblib
+backend/ml/metrics.json
+.env

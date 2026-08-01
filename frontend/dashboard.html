@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentry &mdash; IDS Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #10141A;
+    --panel: #161B23;
+    --panel-2: #1C222C;
+    --line: #262E3A;
+    --text: #E7EAEE;
+    --muted: #8A93A3;
+    --steel: #5B8DBE;
+    --amber: #E8A33D;
+    --red: #E15252;
+    --good: #4FAE8A;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  ::selection{background:var(--steel);color:#0A0D11;}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, var(--panel), var(--bg));
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .mark{
+    width:30px;height:30px;border-radius:7px;
+    background:conic-gradient(from 220deg, var(--steel), var(--amber), var(--steel));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:600;font-size:14px;color:#0A0D11;
+  }
+  .brand h1{font-size:17px;margin:0;font-weight:600;letter-spacing:0.2px;}
+  .brand span.tag{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-top:1px;}
+  .status-pill{
+    font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:20px;
+    border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:7px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 8px var(--good);}
+  .dot.bad{background:var(--red);box-shadow:0 0 8px var(--red);}
+
+  /* ---- Login ---- */
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+  .login-card{
+    width:340px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:28px;
+  }
+  .login-card h2{margin:0 0 4px;font-size:18px;}
+  .login-card p{margin:0 0 20px;color:var(--muted);font-size:13px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-family:var(--mono);}
+  .field input{
+    width:100%;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:7px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;
+  }
+  .field input:focus{border-color:var(--steel);}
+  button.primary{
+    width:100%;padding:11px;background:var(--steel);color:#0A0D11;border:none;border-radius:7px;
+    font-weight:600;font-family:var(--sans);font-size:14px;cursor:pointer;margin-top:6px;
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  .error-msg{color:var(--red);font-size:12px;margin-top:10px;font-family:var(--mono);}
+  .hint{margin-top:16px;font-size:11px;color:var(--muted);font-family:var(--mono);line-height:1.6;}
+
+  /* ---- Dashboard layout ---- */
+  .grid{display:none;grid-template-columns: 1.3fr 1fr; gap:18px; padding:22px 28px; max-width:1400px; margin:0 auto;}
+  .grid.active{display:grid;}
+  .col{display:flex;flex-direction:column;gap:18px;}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  .panel-head{
+    padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
+  }
+  .panel-head h3{margin:0;font-size:13px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;color:var(--muted);}
+  .panel-body{padding:0;max-height:420px;overflow-y:auto;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);}
+  .stat{background:var(--panel);padding:16px 18px;}
+  .stat .num{font-family:var(--mono);font-size:24px;font-weight:600;}
+  .stat .label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.3px;}
+
+  .alert-item{padding:12px 18px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;}
+  .alert-item:last-child{border-bottom:none;}
+  .alert-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .alert-user{font-weight:600;color:var(--text);}
+  .badge{
+    font-size:10px;padding:2px 7px;border-radius:10px;font-family:var(--mono);text-transform:uppercase;
+  }
+  .badge.signature{background:rgba(225,82,82,0.15);color:var(--red);}
+  .badge.ml{background:rgba(232,163,61,0.15);color:var(--amber);}
+  .badge.signature-ml, .badge.signature\+ml{background:rgba(225,82,82,0.2);color:var(--red);}
+  .alert-reason{color:var(--muted);}
+  .alert-meta{color:#5B6472;margin-top:3px;font-size:11px;}
+
+  .log-item{padding:9px 18px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;display:flex;justify-content:space-between;gap:10px;}
+  .log-item:last-child{border-bottom:none;}
+  .log-item.flagged{background:rgba(225,82,82,0.06);}
+  .log-user{color:var(--text);}
+  .log-endpoint{color:var(--muted);flex:1;text-align:left;padding-left:10px;}
+  .log-flag{color:var(--red);}
+  .log-ok{color:var(--good);}
+
+  .chain-item{padding:11px 18px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;}
+  .chain-item:last-child{border-bottom:none;}
+  .chain-hash{color:var(--steel);word-break:break-all;}
+  .chain-link{color:#5B6472;margin:2px 0;}
+  .chain-event{color:var(--muted);margin-top:4px;}
+
+  .empty{padding:30px 18px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;}
+
+  .verify-badge{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:6px;}
+  .verify-ok{background:rgba(79,174,138,0.15);color:var(--good);}
+  .verify-bad{background:rgba(225,82,82,0.15);color:var(--red);}
+
+  .logout-btn{
+    font-family:var(--mono);font-size:11px;background:none;border:1px solid var(--line);color:var(--muted);
+    padding:6px 12px;border-radius:6px;cursor:pointer;
+  }
+  .logout-btn:hover{border-color:var(--steel);color:var(--text);}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">S</div>
+    <div>
+      <h1>Sentry</h1>
+      <span class="tag">AI-assisted intrusion detection console</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="status-pill" id="connPill"><div class="dot" id="connDot"></div><span id="connText">connecting&hellip;</span></div>
+    <button class="logout-btn" id="logoutBtn" style="display:none;">Sign out</button>
+  </div>
+</div>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h2>Admin sign in</h2>
+    <p>Access the live detection console.</p>
+    <div class="field">
+      <label>Username</label>
+      <input id="username" type="text" value="admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="password" type="password" value="AdminPass123!" autocomplete="current-password">
+    </div>
+    <button class="primary" id="loginBtn">Sign in</button>
+    <div class="error-msg" id="loginError"></div>
+    <div class="hint">Backend expected at <span id="apiBaseLabel">http://localhost:5001</span>.<br>Demo admin: admin / AdminPass123!</div>
+  </div>
+</div>
+
+<div class="grid" id="dashboard">
+  <div class="col">
+    <div class="panel">
+      <div class="panel-head"><h3>Overview</h3></div>
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="statEvents">&mdash;</div><div class="label">Events logged</div></div>
+        <div class="stat"><div class="num" id="statAlerts">&mdash;</div><div class="label">Alerts raised</div></div>
+        <div class="stat"><div class="num" id="statUsers">&mdash;</div><div class="label">Actors tracked</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Live alerts</h3></div>
+      <div class="panel-body" id="alertsBody">
+        <div class="empty">No alerts yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Audit chain integrity</h3>
+        <span class="verify-badge" id="verifyBadge">&mdash;</span>
+      </div>
+      <div class="panel-body" id="chainBody" style="max-height:180px;">
+        <div class="empty">No audit entries yet.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Access log</h3></div>
+      <div class="panel-body" id="logsBody">
+        <div class="empty">No activity yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:5001";
+document.getElementById('apiBaseLabel').textContent = API_BASE;
+
+let token = null;
+const $ = (id) => document.getElementById(id);
+
+$('loginBtn').addEventListener('click', login);
+$('logoutBtn').addEventListener('click', logout);
+document.getElementById('password').addEventListener('keydown', e => { if(e.key === 'Enter') login(); });
+
+async function login(){
+  $('loginError').textContent = '';
+  try{
+    const res = await fetch(`${API_BASE}/api/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: $('username').value, password: $('password').value})
+    });
+    const data = await res.json();
+    if(!res.ok){ $('loginError').textContent = data.error || 'Login failed'; return; }
+    if(data.role !== 'admin'){ $('loginError').textContent = 'This console requires an admin account.'; return; }
+    token = data.token;
+    $('loginWrap').style.display = 'none';
+    $('dashboard').classList.add('active');
+    $('logoutBtn').style.display = 'inline-block';
+    setConn(true);
+    refreshAll();
+    window._pollHandle = setInterval(refreshAll, 3000);
+  }catch(err){
+    $('loginError').textContent = 'Cannot reach the API — is the Flask server running on ' + API_BASE + '?';
+    setConn(false);
+  }
+}
+
+function logout(){
+  token = null;
+  clearInterval(window._pollHandle);
+  $('dashboard').classList.remove('active');
+  $('loginWrap').style.display = 'flex';
+  $('logoutBtn').style.display = 'none';
+}
+
+function setConn(ok){
+  $('connDot').className = 'dot' + (ok ? '' : ' bad');
+  $('connText').textContent = ok ? 'live' : 'disconnected';
+}
+
+async function authedGet(path){
+  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Authorization': `Bearer ${token}` } });
+  if(res.status === 401){ logout(); throw new Error('session expired'); }
+  return res.json();
+}
+
+async function refreshAll(){
+  try{
+    const [status, alerts, logs, audit] = await Promise.all([
+      authedGet('/api/status'),
+      authedGet('/api/alerts'),
+      authedGet('/api/logs'),
+      authedGet('/api/audit-log'),
+    ]);
+    setConn(true);
+    renderStatus(status);
+    renderAlerts(alerts.alerts);
+    renderLogs(logs.logs);
+    renderChain(audit);
+  }catch(err){
+    setConn(false);
+  }
+}
+
+function fmtTime(ts){
+  return new Date(ts*1000).toLocaleTimeString();
+}
+
+function renderStatus(s){
+  $('statEvents').textContent = s.total_events_logged;
+  $('statAlerts').textContent = s.total_alerts;
+  $('statUsers').textContent = s.active_users_tracked;
+}
+
+function renderAlerts(alerts){
+  if(!alerts.length){ $('alertsBody').innerHTML = '<div class="empty">No alerts yet. Normal traffic only.</div>'; return; }
+  $('alertsBody').innerHTML = alerts.slice(0,40).map(a => {
+    const badgeClass = a.detection.source.replace('+','-');
+    return `<div class="alert-item">
+      <div class="alert-top">
+        <span class="alert-user">${escapeHtml(a.user_id)} &rarr; ${escapeHtml(a.endpoint)}</span>
+        <span class="badge ${badgeClass}">${escapeHtml(a.detection.source)}</span>
+      </div>
+      <div class="alert-reason">${escapeHtml(a.detection.reason)}</div>
+      <div class="alert-meta">${fmtTime(a.timestamp)} &middot; ip ${escapeHtml(a.ip)} &middot; p=${a.detection.ml_probability}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLogs(logs){
+  if(!logs.length){ $('logsBody').innerHTML = '<div class="empty">No activity yet.</div>'; return; }
+  $('logsBody').innerHTML = logs.slice(0,60).map(l => {
+    const flagged = l.detection.is_alert;
+    return `<div class="log-item ${flagged ? 'flagged' : ''}">
+      <span class="log-user">${escapeHtml(l.user_id)}</span>
+      <span class="log-endpoint">${escapeHtml(l.endpoint)}</span>
+      <span class="${flagged ? 'log-flag' : 'log-ok'}">${flagged ? 'FLAGGED' : 'ok'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderChain(audit){
+  const badge = $('verifyBadge');
+  if(audit.verification.valid){
+    badge.textContent = `verified &middot; ${audit.verification.entries} entries`;
+    badge.className = 'verify-badge verify-ok';
+  } else {
+    badge.textContent = 'TAMPERED';
+    badge.className = 'verify-badge verify-bad';
+  }
+  const entries = audit.chain.slice(-15).reverse();
+  if(!entries.length){ $('chainBody').innerHTML = '<div class="empty">No audit entries yet.</div>'; return; }
+  $('chainBody').innerHTML = entries.map(e => `<div class="chain-item">
+      <div class="chain-hash">#${e.entry_hash.slice(0,16)}&hellip;</div>
+      <div class="chain-link">&#8617; prev ${e.prev_hash.slice(0,12)}&hellip;</div>
+      <div class="chain-event">${escapeHtml(e.event.type)} &middot; ${escapeHtml(e.event.user_id || '')} &middot; ${escapeHtml(e.event.reason || '')}</div>
+    </div>`).join('');
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>

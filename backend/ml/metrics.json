@@ -1,0 +1,20 @@
+{
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "false_positive_rate": 0.0,
+  "confusion_matrix": {
+    "tn": 1000,
+    "fp": 0,
+    "fn": 0,
+    "tp": 250
+  },
+  "feature_importances": {
+    "requests_per_minute": 0.4516,
+    "unique_records_accessed_5min": 0.1763,
+    "off_hours": 0.0368,
+    "failed_auth_attempts_10min": 0.1768,
+    "bytes_transferred_5min": 0.1555,
+    "is_confidential_endpoint": 0.0031
+  }
+}
